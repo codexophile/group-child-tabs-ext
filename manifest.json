@@ -2,8 +2,11 @@
   "manifest_version": 3,
   "name": "Group Child Tabs",
   "version": "1.0.0",
-  "description": "Automatically groups any tab opened from a link with its parent tab.",
-  "permissions": ["tabs", "tabGroups"],
+  "description": "Automatically groups tabs opened from a link with their parent tab, creating a shared group when the parent is ungrouped.",
+  "permissions": [
+    "tabs",
+    "tabGroups"
+  ],
   "background": {
     "service_worker": "background.js"
   }

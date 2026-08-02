@@ -9,9 +9,20 @@
 // spawning their own.
 const pendingGroupCreation = new Map();
 
-chrome.tabs.onCreated.addListener(async (tab) => {
+function isBlankOrNewTabUrl(url) {
+  return (
+    url === 'about:blank' ||
+    url === 'about:newtab' ||
+    url === 'chrome://newtab/'
+  );
+}
+
+chrome.tabs.onCreated.addListener(async tab => {
   const openerTabId = tab.openerTabId;
   if (openerTabId == null) return; // not opened from a link/window.open
+
+  const initialUrl = tab.pendingUrl || tab.url || '';
+  if (isBlankOrNewTabUrl(initialUrl)) return;
 
   try {
     const opener = await chrome.tabs.get(openerTabId);
@@ -19,7 +30,7 @@ chrome.tabs.onCreated.addListener(async (tab) => {
     // Don't try to group across windows (e.g. "open link in new window").
     if (opener.windowId !== tab.windowId) return;
 
-    if (opener.groupId && opener.groupId !== chrome.tabGroups.TAB_GROUP_ID_NONE) {
+    if (opener.groupId !== chrome.tabGroups.TAB_GROUP_ID_NONE) {
       // Parent already belongs to a group — just join it.
       await chrome.tabs.group({ tabIds: [tab.id], groupId: opener.groupId });
       return;
@@ -33,10 +44,20 @@ chrome.tabs.onCreated.addListener(async (tab) => {
       return;
     }
 
-    const creation = chrome.tabs.group({ tabIds: [opener.id, tab.id] });
+    let resolveCreation;
+    let rejectCreation;
+    const creation = new Promise((resolve, reject) => {
+      resolveCreation = resolve;
+      rejectCreation = reject;
+    });
     pendingGroupCreation.set(openerTabId, creation);
     try {
+      const groupId = await chrome.tabs.group({ tabIds: [opener.id, tab.id] });
+      resolveCreation(groupId);
       await creation;
+    } catch (error) {
+      rejectCreation(error);
+      throw error;
     } finally {
       pendingGroupCreation.delete(openerTabId);
     }
