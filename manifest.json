@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "Group Child Tabs",
   "version": "1.0.0",
-  "description": "Automatically groups tabs opened from a link with their parent tab, creating a shared group when the parent is ungrouped.",
+  "description": "Automatically groups tabs opened from a link with their parent tab, skips pinned parents, and ungroups a tab when it is the only one left in a group.",
   "permissions": [
     "tabs",
     "tabGroups"
